@@ -18,6 +18,7 @@
 
     .feedback {
       text-align: center;
+      position: relative;
       padding: 36px 24px;
       width: min(420px, 95vw);
       background: rgba(255, 255, 255, 0.16);
@@ -53,11 +54,13 @@
     }
 
     .button-row {
+      position: relative;
       display: flex;
       justify-content: center;
       flex-wrap: wrap;
       gap: 14px;
       margin-top: 12px;
+      min-height: 72px;
     }
 
     .btn {
@@ -70,10 +73,11 @@
       border: none;
       border-radius: 999px;
       cursor: pointer;
-      transition: transform 0.26s ease, box-shadow 0.26s ease;
+      transition: transform 0.26s ease, box-shadow 0.26s ease, left 0.2s ease, top 0.2s ease;
       position: relative;
       outline: none;
       box-shadow: 0 10px 25px rgba(233, 30, 99, 0.25);
+      flex-shrink: 0;
     }
 
     .btn.secondary {
@@ -107,6 +111,10 @@
 
       .beer-row {
         gap: 12px;
+      }
+
+      .button-row {
+        min-height: 140px;
       }
 
       .btn {
@@ -148,27 +156,29 @@
     const btn = document.getElementById('feedbackBtn');
     const noBtn = document.getElementById('noBtn');
     const responseText = document.getElementById('responseText');
-    const feedbackBox = document.querySelector('.feedback');
+    const buttonRow = document.querySelector('.button-row');
+    const isTouch = window.matchMedia('(hover: none)').matches;
     let moved = false;
 
     function moveDaButton() {
-      const boxRect = feedbackBox.getBoundingClientRect();
+      const rowRect = buttonRow.getBoundingClientRect();
       const btnRect = btn.getBoundingClientRect();
       const padding = 12;
-      const maxX = boxRect.width - btnRect.width - padding;
-      const maxY = boxRect.height - btnRect.height - padding;
+      const maxX = Math.max(rowRect.width - btnRect.width - padding, 0);
+      const maxY = Math.max(rowRect.height - btnRect.height - padding, 0);
       const x = Math.random() * maxX + padding;
       const y = Math.random() * maxY + padding;
       btn.style.position = 'absolute';
       btn.style.left = `${x}px`;
       btn.style.top = `${y}px`;
+      btn.style.transform = 'none';
     }
 
     function resetDaButton() {
       btn.style.position = 'relative';
-      btn.style.left = '0';
-      btn.style.top = '0';
-      btn.style.transform = 'translateX(0)';
+      btn.style.left = '';
+      btn.style.top = '';
+      btn.style.transform = '';
     }
 
     function showResponse(text) {
@@ -183,21 +193,18 @@
       showResponse('Nu? Hmm… cred că mi-e dor de tine oricum. 🍻');
     });
 
-    btn.addEventListener('pointerenter', () => {
-      if (window.matchMedia('(hover: none)').matches) {
-        // on touch devices, move the button when the user touches it
-        moveDaButton();
-      } else {
+    if (isTouch) {
+      btn.addEventListener('touchstart', (event) => {
+        if (event.touches.length === 1) {
+          moveDaButton();
+        }
+      }, { passive: true });
+    } else {
+      btn.addEventListener('mouseenter', () => {
         moved = !moved;
         btn.style.transform = moved ? 'translateX(150px)' : 'translateX(0)';
-      }
-    });
-
-    btn.addEventListener('touchstart', (event) => {
-      if (event.touches.length === 1) {
-        moveDaButton();
-      }
-    });
+      });
+    }
 
     window.addEventListener('resize', resetDaButton);
   </script>
