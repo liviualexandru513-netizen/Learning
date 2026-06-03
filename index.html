@@ -1,62 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Feedback Button</title>
-  <style>
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle at top left, #ff9ac2 0%, #ff6ab5 38%, #ea3a8a 72%, #c3357b 100%);
-      color: #fff;
-      font-family: Arial, sans-serif;
+  <script>
+    const btn = document.getElementById('feedbackBtn');
+    const noBtn = document.getElementById('noBtn');
+    const responseText = document.getElementById('responseText');
+    const buttonRow = document.querySelector('.button-row');
+    const isTouch = window.matchMedia('(hover: none)').matches;
+
+    function showResponse(text) {
+      responseText.textContent = text;
     }
 
-    .feedback {
-      text-align: center;
-      padding: 36px 24px;
-      width: min(420px, 95vw);
-      background: rgba(255, 255, 255, 0.16);
-      border: 1px solid rgba(255, 255, 255, 0.26);
-      border-radius: 28px;
-      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.16);
-      backdrop-filter: blur(14px);
+    function randomPosAwayFrom(px, py) {
+      const rowRect = buttonRow.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+      const padding = 12;
+      const maxX = Math.max(rowRect.width - btnRect.width - padding, 0);
+      const maxY = Math.max(rowRect.height - btnRect.height - padding, 0);
+      const minDist = Math.max(Math.min(rowRect.width, rowRect.height) * 0.25, 120);
+      for (let i = 0; i < 12; i++) {
+        const x = Math.random() * maxX + padding;
+        const y = Math.random() * maxY + padding;
+        const globalX = rowRect.left + x + btnRect.width / 2;
+        const globalY = rowRect.top + y + btnRect.height / 2;
+        const dx = globalX - px;
+        const dy = globalY - py;
+        if (Math.hypot(dx, dy) > minDist) return { x, y };
+      }
+      // fallback: move to opposite quadrant
+      const x = px > rowRect.left + rowRect.width / 2 ? padding : Math.max(rowRect.width - btnRect.width - padding, 0);
+      const y = py > rowRect.top + rowRect.height / 2 ? padding : Math.max(rowRect.height - btnRect.height - padding, 0);
+      return { x, y };
     }
 
-    .heading {
-      margin: 0 0 22px;
-      font-size: 1.8rem;
-      letter-spacing: 0.02em;
+    function moveDaButtonTo(x, y) {
+      btn.style.position = 'absolute';
+      btn.style.left = `${x}px`;
+      btn.style.top = `${y}px`;
+      btn.style.transform = 'none';
     }
 
-    .beer-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 18px;
-      margin-bottom: 24px;
+    function resetDaButton() {
+      btn.style.position = 'relative';
+      btn.style.left = '';
+      btn.style.top = '';
     }
 
-    .beer-icon {
-      width: 56px;
-      height: 56px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255, 255, 255, 0.24);
-      border-radius: 50%;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+    // Desktop behavior: small playful move
+    if (!isTouch) {
+      btn.addEventListener('mouseenter', () => {
+        const rowRect = buttonRow.getBoundingClientRect();
+        const btnRect = btn.getBoundingClientRect();
+        const padding = 12;
+        const maxX = Math.max(rowRect.width - btnRect.width - padding, 0);
+        const maxY = Math.max(rowRect.height - btnRect.height - padding, 0);
+        const x = Math.random() * maxX + padding;
+        const y = Math.random() * maxY + padding;
+        moveDaButtonTo(x, y);
+      });
+
+      btn.addEventListener('click', () => {
+        showResponse('Da! Te iubesc foarte mult. 💖');
+      });
     }
 
-    .button-row {
-      position: relative;
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
+    // Touch behavior: aggressive, avoid taps
+    if (isTouch) {
+      document.addEventListener('touchmove', (ev) => {
+        const t = ev.touches[0];
+        const btnRect = btn.getBoundingClientRect();
+        const cx = btnRect.left + btnRect.width / 2;
+        const cy = btnRect.top + btnRect.height / 2;
+        const dist = Math.hypot(cx - t.clientX, cy - t.clientY);
+        if (dist < 100) {
+          const pos = randomPosAwayFrom(t.clientX, t.clientY);
+          moveDaButtonTo(pos.x, pos.y);
+        }
+      }, { passive: true });
+
+      btn.addEventListener('touchstart', (ev) => {
+        const t = ev.touches[0];
+        ev.preventDefault();
+        const pos = randomPosAwayFrom(t.clientX, t.clientY);
+        moveDaButtonTo(pos.x, pos.y);
+        // give a little feedback
+        showResponse('Hopa, nu ai prins „Da”.');
+      }, { passive: false });
+
+      btn.addEventListener('touchend', (ev) => {
+        ev.preventDefault();
+      }, { passive: false });
+    }
+
+    noBtn.addEventListener('click', () => {
+      showResponse('Nu? Hmm… cred că mi-e dor de tine oricum. 🍻');
+    });
+
+    window.addEventListener('resize', resetDaButton);
+  </script>
       gap: 14px;
       margin-top: 12px;
       min-height: 72px;
