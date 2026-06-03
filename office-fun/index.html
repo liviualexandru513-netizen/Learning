@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Putem să ne îmbătăm la birou?</title>
+  <style>
+    :root{--bg1:#ff9ac2;--bg2:#ea3a8a;--accent:#e91e63}
+    html,body{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif}
+    body{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:#fff}
+    .card{width:min(520px,94vw);padding:32px;border-radius:18px;background:rgba(255,255,255,0.08);backdrop-filter:blur(8px);text-align:center}
+    h1{margin:0 0 18px;font-size:1.6rem}
+    .desc{opacity:0.95;margin-bottom:18px}
+    .button-row{position:relative;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;min-height:90px}
+    .btn{padding:12px 22px;border-radius:999px;border:none;font-weight:700;color:#fff;background:linear-gradient(135deg,#ff6cc7,var(--accent));cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,0.18)}
+    .btn:active{transform:scale(0.98)}
+    .note{margin-top:16px;font-size:0.95rem;opacity:0.9}
+    @media(max-width:480px){.card{padding:22px}.btn{width:140px}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Putem să ne îmbătăm la birou?</h1>
+    <div class="desc">Hai să vedem cine îl prinde primul — spoiler: nu prea e posibil.</div>
+    <div class="button-row" id="buttonRow">
+      <button class="btn flee" id="btnYes" type="button">Da</button>
+      <button class="btn flee" id="btnNo" type="button">Nu</button>
+    </div>
+    <div class="note" id="result">Încearcă să apeși unul.</div>
+  </div>
+
+  <script>
+    const row = document.getElementById('buttonRow');
+    const btnYes = document.getElementById('btnYes');
+    const btnNo = document.getElementById('btnNo');
+    const result = document.getElementById('result');
+
+    function rand(min,max){return Math.random()*(max-min)+min}
+
+    function placeButton(btn,x,y){
+      btn.style.position='absolute';
+      btn.style.left = x + 'px';
+      btn.style.top = y + 'px';
+    }
+
+    function resetButtons(){
+      btnYes.style.position='relative'; btnYes.style.left=''; btnYes.style.top='';
+      btnNo.style.position='relative'; btnNo.style.left=''; btnNo.style.top='';
+    }
+
+    function moveAwayFrom(btn,px,py,minDist=140){
+      const r = row.getBoundingClientRect();
+      const b = btn.getBoundingClientRect();
+      const padding=8;
+      const maxX = Math.max(r.width - b.width - padding,0);
+      const maxY = Math.max(r.height - b.height - padding,0);
+      // try several random positions and pick one far enough from pointer
+      for(let i=0;i<12;i++){
+        const x = rand(padding,maxX);
+        const y = rand(padding,maxY);
+        const gx = r.left + x + b.width/2;
+        const gy = r.top + y + b.height/2;
+        const d = Math.hypot(gx - px, gy - py);
+        if(d>minDist) { placeButton(btn,x,y); return; }
+      }
+      // fallback: opposite quadrant
+      const x = px > r.left + r.width/2 ? padding : maxX;
+      const y = py > r.top + r.height/2 ? padding : maxY;
+      placeButton(btn,x,y);
+    }
+
+    // both buttons flee on hover or touch
+    function attachFlee(btn){
+      btn.addEventListener('pointerenter', (e)=>{
+        const p = {x: e.clientX || (e.touches && e.touches[0].clientX) || (row.getBoundingClientRect().left + row.getBoundingClientRect().width/2),
+                   y: e.clientY || (e.touches && e.touches[0].clientY) || (row.getBoundingClientRect().top + row.getBoundingClientRect().height/2)};
+        moveAwayFrom(btn,p.x,p.y, (window.matchMedia('(hover: none)').matches ? 160 : 90));
+      });
+
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const p = {x: e.clientX, y: e.clientY};
+        // both buttons jump when any is clicked, harder to catch
+        moveAwayFrom(btnYes,p.x,p.y,160);
+        moveAwayFrom(btnNo,p.x,p.y,160);
+        result.textContent = 'Hopa — nu l-ai prins.';
+      });
+
+      // touch: aggressive
+      btn.addEventListener('touchstart', (e)=>{
+        const t = e.touches[0];
+        e.preventDefault();
+        moveAwayFrom(btnYes,t.clientX,t.clientY,200);
+        moveAwayFrom(btnNo,t.clientX,t.clientY,200);
+        result.textContent = 'Hopa — prea rapid!';
+      }, {passive:false});
+    }
+
+    attachFlee(btnYes);
+    attachFlee(btnNo);
+
+    // also follow finger on move to make it even harder
+    document.addEventListener('touchmove', (e)=>{
+      const t = e.touches[0];
+      const distYes = Math.hypot((btnYes.getBoundingClientRect().left + btnYes.getBoundingClientRect().width/2) - t.clientX,
+                                 (btnYes.getBoundingClientRect().top + btnYes.getBoundingClientRect().height/2) - t.clientY);
+      const distNo = Math.hypot((btnNo.getBoundingClientRect().left + btnNo.getBoundingClientRect().width/2) - t.clientX,
+                                (btnNo.getBoundingClientRect().top + btnNo.getBoundingClientRect().height/2) - t.clientY);
+      if(distYes < 140) moveAwayFrom(btnYes,t.clientX,t.clientY,220);
+      if(distNo < 140) moveAwayFrom(btnNo,t.clientX,t.clientY,220);
+    }, {passive:true});
+
+    window.addEventListener('resize', resetButtons);
+  </script>
+</body>
+</html>
